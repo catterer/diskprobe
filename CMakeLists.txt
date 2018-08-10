@@ -7,7 +7,8 @@ set (CMAKE_CXX_STANDARD 17)
 include_directories("${CMAKE_SOURCE_DIR}")
 
 list(APPEND sources
-    src/main.cc)
+    src/main.cc
+    src/Probe.cc)
 
 add_executable(dprobe ${sources})
 target_link_libraries (dprobe pthread)
