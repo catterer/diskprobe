@@ -6,16 +6,11 @@
 #include <stdexcept>
 #include <stdint.h>
 
-#include <boost/property_tree/ini_parser.hpp>
-#include <boost/program_options.hpp>
-
 namespace dprobe {
-
-namespace po = boost::program_options;
 
 class Dispatcher {
 public:
-    Dispatcher(int argc, char** argv);
+    Dispatcher(uint32_t max_sampling_rate_ms, const probe::Options& root);
     void loop();
 
 private:
@@ -26,47 +21,10 @@ private:
     uint32_t max_sampling_rate_ms_;
 };
 
-Dispatcher::Dispatcher(int argc, char** argv) {
-    std::string config_file;
-    po::options_description desc("Allowed options");
-    uint32_t log_level = UINT32_MAX;
-
-    desc.add_options()
-
-        ("help",
-            "produce help message")
-
-        ("config,c",
-            po::value(&config_file),
-            "path to config file")
-
-        ("log-level,l",
-            po::value(&log_level),
-            "0-4, 0: only fatal, 4: everything")
-
-        ("max-sampling-rate,s", 
-            po::value(&max_sampling_rate_ms_)->default_value(100),
-            "how often does main thread takes looks at the clock, msec");
-
-    po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-    po::notify(vm);
-
-    if (vm.count("help")) {
-        std::cout << desc << "\n";
-        exit(EXIT_SUCCESS);
-    }
-
-    if (config_file.empty())
-        throw std::invalid_argument("config file not specified");
-
-    if (log_level != UINT32_MAX)
-        log::Logger::get().filter((log::Level) log_level);
-
-    boost::property_tree::ptree tree;
-    boost::property_tree::ini_parser::read_ini(config_file, tree);
-
-    for (const auto& p: tree) {
+Dispatcher::Dispatcher(uint32_t max_sampling_rate_ms, const probe::Options& root):
+    max_sampling_rate_ms_{max_sampling_rate_ms}
+{
+    for (const auto& p: root) {
         if (probes_.count(p.first))
             throw std::runtime_error("probe names duplication");
         probes_.emplace(p.first, probe::factory(p.first, p.second, queue_));
