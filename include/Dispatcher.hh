@@ -2,6 +2,7 @@
 #include <include/Probe.hh>
 #include <include/Queue.hh>
 #include <chrono>
+#include <iostream>
 #include <stdint.h>
 
 #include <boost/property_tree/ini_parser.hpp>
@@ -21,7 +22,7 @@ private:
 
     Queue queue_;
     std::map<std::string, std::unique_ptr<probe::AbstractProbe>> probes_;
-    uint32_t sampling_rate_ms_;
+    uint32_t max_sampling_rate_ms_;
 };
 
 Dispatcher::Dispatcher(int argc, char** argv) {
@@ -36,8 +37,8 @@ Dispatcher::Dispatcher(int argc, char** argv) {
             po::value(&config_file),
             "path to config file")
 
-        ("sampling-rate,s", 
-            po::value(&sampling_rate_ms_)->default_value(100),
+        ("max-sampling-rate,s", 
+            po::value(&max_sampling_rate_ms_)->default_value(100),
             "how often does main thread takes looks at the clock, msec");
 
     po::variables_map vm;
@@ -59,7 +60,7 @@ void Dispatcher::loop() {
         pb.second->start();
 
     while (not probes_.empty()) {
-        auto m = queue_.pop_for(std::chrono::milliseconds(sampling_rate_ms_));
+        auto m = queue_.pop_for(milliseconds(max_sampling_rate_ms_));
         process(std::move(m));
 
         auto now = std::chrono::high_resolution_clock::now();

@@ -1,7 +1,7 @@
 #pragma once
 #include <include/Channel.hh>
 
-#include <chrono>
+#include <include/chrono_aliases.hh>
 #include <thread>
 #include <functional>
 #include <boost/property_tree/ptree.hpp>
@@ -10,7 +10,6 @@ namespace dprobe {
 namespace probe {
 
 using boost::property_tree::ptree;
-using time_point = std::chrono::time_point<std::chrono::high_resolution_clock>;
 
 class AbstractProbe;;
 auto factory(const std::string& probename, const ptree&, Queue&) -> std::unique_ptr<AbstractProbe>;
@@ -38,7 +37,6 @@ public:
     virtual void loop(Channel&, const ptree&) = 0;
 
 private:
-    time_point  last_heartbeat_;
     const std::string name_;
     const ptree ptree_;
     Queue&      queue_;
@@ -51,6 +49,9 @@ public:
 
     void check(time_point now) { /* TODO */; }
     void loop(Channel&, const ptree&);
+
+private:
+    time_point  last_heartbeat_;
 };
 }
 

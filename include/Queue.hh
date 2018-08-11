@@ -3,7 +3,7 @@
 #include <memory>
 #include <queue>
 #include <mutex>
-#include <chrono>
+#include <include/chrono_aliases.hh>
 #include <condition_variable>
 
 namespace dprobe {
@@ -14,7 +14,7 @@ class Queue: private std::queue<MsgPtr> {
 public:
     Queue() = default;
 
-    auto pop_for(std::chrono::milliseconds ms) -> MsgPtr {
+    auto pop_for(milliseconds ms) -> MsgPtr {
         std::unique_lock<std::mutex> lk(mut_);
         if (!condvar_.wait_for(lk, ms, [this] () { return !empty(); }))
             return {};
