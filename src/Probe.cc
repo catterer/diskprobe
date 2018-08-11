@@ -1,26 +1,27 @@
 #include <include/Probe.hh>
 #include <include/Log.hh>
 
-#include <boost/filesystem/path.hpp>
 #include <vector>
+#include <list>
 #include <cstring>
+#include <unistd.h>
 
 namespace dprobe {
 namespace probe {
 
-using Path = boost::filesystem::path;
+void AbstractProbe::forkexec(std::string script) {
+    NLog(warn) << "executing '" << script << "'";
 
-void AbstractProbe::forkexec(const std::string& script) {
-    auto to_tok = std::shared_ptr<char>(strdup(script.c_str()), [] (char* p) { free(p); });
-    std::vector<std::string> toks;
-    for (auto tok = strtok(to_tok.get(), " "); tok; tok = strtok(NULL, " "))
-        toks.emplace_back(tok);
+    auto pid = fork();
+    if (pid < 0)
+        throw std::runtime_error(strerror(errno));
 
-    if (toks.empty())
-        throw std::runtime_error("Invalid path");
+    if (pid)
+        return;
 
-    Path path(toks[0]);
-    NLog(warn) << "got path " << path;
+    execlp("bash", "bash", "-c", script.c_str(), nullptr);
+    NLog(error) << "child process: " << strerror(errno) << " (" << script << ")";
+    abort();
 }
 
 auto factory(const std::string& probename, const Options& pt, Queue& queue)
@@ -82,10 +83,15 @@ void HeartbeatingProbe::processMessage(std::shared_ptr<message::AbstractMessage>
 
 void HeartbeatingProbe::onUp() {
     NLog(warn) << "UP";
+
+    auto script = options().get("on_reappear", std::string());
+    if (!script.empty())
+        forkexec(script);
 }
 
 void HeartbeatingProbe::onDown() {
     NLog(error) << "DOWN";
+
     auto script = options().get("on_timeout", std::string());
     if (!script.empty())
         forkexec(script);

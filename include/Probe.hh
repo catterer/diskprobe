@@ -36,7 +36,7 @@ public:
     virtual void processMessage(std::shared_ptr<message::AbstractMessage>) = 0;
 
 protected:
-    void forkexec(const std::string& script);
+    void forkexec(std::string script);
 
 private:
     virtual void iteration(Channel&) = 0;
