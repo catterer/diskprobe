@@ -21,9 +21,12 @@ std::ostream& operator<<(std::ostream& out, Level lev) {
 Record::~Record() {
     auto t = std::time(nullptr);
     auto tm = *std::localtime(&t);
-    std::cout << "[" << getpid() << " " << std::put_time(&tm, "%e.%m.%Y %H:%M:%S") << "] " << level_
-        << " " << str() << "\n";
-    std::cout.flush();
+    {
+        std::lock_guard<std::mutex> lg(Logger::get().mutex());
+        std::cout << "[" << getpid() << " " << std::put_time(&tm, "%e.%m.%Y %H:%M:%S") << "] " << level_
+            << " " << str() << "\n";
+        std::cout.flush();
+    }
 }
 
 }

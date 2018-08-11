@@ -35,6 +35,9 @@ public:
     virtual void check(time_point now) = 0;
     virtual void processMessage(std::shared_ptr<message::AbstractMessage>) = 0;
 
+protected:
+    void forkexec(const std::string& script);
+
 private:
     virtual void iteration(Channel&) = 0;
     void loop(Channel&);

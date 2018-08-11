@@ -15,4 +15,5 @@ list(APPEND sources
 add_executable(dprobe ${sources})
 target_link_libraries (dprobe pthread)
 target_link_libraries (dprobe boost_system)
+target_link_libraries (dprobe boost_filesystem)
 target_link_libraries (dprobe boost_program_options)

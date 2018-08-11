@@ -1,8 +1,27 @@
 #include <include/Probe.hh>
 #include <include/Log.hh>
 
+#include <boost/filesystem/path.hpp>
+#include <vector>
+#include <cstring>
+
 namespace dprobe {
 namespace probe {
+
+using Path = boost::filesystem::path;
+
+void AbstractProbe::forkexec(const std::string& script) {
+    auto to_tok = std::shared_ptr<char>(strdup(script.c_str()), [] (char* p) { free(p); });
+    std::vector<std::string> toks;
+    for (auto tok = strtok(to_tok.get(), " "); tok; tok = strtok(NULL, " "))
+        toks.emplace_back(tok);
+
+    if (toks.empty())
+        throw std::runtime_error("Invalid path");
+
+    Path path(toks[0]);
+    NLog(warn) << "got path " << path;
+}
 
 auto factory(const std::string& probename, const Options& pt, Queue& queue)
     -> std::unique_ptr<AbstractProbe>
@@ -18,6 +37,7 @@ void AbstractProbe::start() {
             try {
                 loop(chan);
             } catch (const std::exception& x) {
+                NLog(error) << "unhandled exception " << x.what();
                 chan.send<message::Abort>(x.what());
             }
         });
@@ -66,6 +86,9 @@ void HeartbeatingProbe::onUp() {
 
 void HeartbeatingProbe::onDown() {
     NLog(error) << "DOWN";
+    auto script = options().get("on_timeout", std::string());
+    if (!script.empty())
+        forkexec(script);
 }
 
 void FaultyHeartbeat::iteration(Channel& chan) {

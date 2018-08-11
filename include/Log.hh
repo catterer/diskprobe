@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <ctime>
 #include <sstream>
+#include <mutex>
 
 #define Log(lev) \
     for (int i = 1; i and log::Logger::get().filter() >= log::Level::lev; i = 0) \
@@ -32,9 +33,11 @@ public:
     auto filter() const -> Level { return filter_; }
 
     static auto get() -> Logger& { return instance_; }
+    auto mutex() -> std::mutex& { return mut_; }
 
 private:
     Level filter_{Level::warn};
+    std::mutex mut_;
     static Logger instance_;
 };
 
