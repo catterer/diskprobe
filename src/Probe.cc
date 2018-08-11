@@ -1,4 +1,5 @@
 #include <include/Probe.hh>
+#include <include/Log.hh>
 
 namespace dprobe {
 namespace probe {
@@ -38,7 +39,7 @@ void HeartbeatingProbe::check(time_point now) {
         return;
     if (now - last_heartbeat_ > period() * 1.5) {
         if (!down_) {
-            std::cout << name() << ": DOWN" << "\n";
+            NLog(error) << "DOWN";
             down_ = true;
         }
     }
@@ -48,10 +49,10 @@ void HeartbeatingProbe::processMessage(std::shared_ptr<message::AbstractMessage>
     {
         auto hb = std::dynamic_pointer_cast<message::Heartbeat>(some_msg);
         if (hb) {
-            std::cout << hb->sender() << ": Heartbeat\n";
+            NLog(debug) << "Heartbeat received";
             last_heartbeat_ = time_now();
             if (down_) {
-                std::cout << name() << ": UP" << "\n";
+                NLog(warning) << "UP";
                 down_ = false;
             }
             return;

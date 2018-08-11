@@ -1,6 +1,7 @@
 #pragma once
 #include <include/Probe.hh>
 #include <include/Queue.hh>
+#include <include/Log.hh>
 #include <chrono>
 #include <stdexcept>
 #include <stdint.h>
@@ -79,7 +80,7 @@ void Dispatcher::process(std::shared_ptr<message::AbstractMessage> some_msg) {
     {
         auto ab = std::dynamic_pointer_cast<message::Abort>(some_msg);
         if (ab) {
-            std::cout << ab->sender() << ": Abort!\n";
+            NLog(fatal, ab->sender()) << "Abort";
             probes_.erase(ab->sender());
             return;
         }
