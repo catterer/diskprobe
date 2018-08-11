@@ -5,6 +5,8 @@
 #include <sstream>
 #include <mutex>
 
+#include <include/Utils.hh>
+
 #define Log(lev) \
     for (int i = 1; i and log::Logger::get().filter() >= log::Level::lev; i = 0) \
         log::Record(log::Level::lev)
@@ -26,19 +28,17 @@ enum class Level {
     debug
 };
 
-class Logger {
+class Logger: public Singleton<Logger> {
 public:
     Logger() = default;
     void filter(Level l) { filter_ = l; }
     auto filter() const -> Level { return filter_; }
 
-    static auto get() -> Logger& { return instance_; }
     auto mutex() -> std::mutex& { return mut_; }
 
 private:
     Level filter_{Level::warn};
     std::mutex mut_;
-    static Logger instance_;
 };
 
 std::ostream& operator<<(std::ostream&, Level);

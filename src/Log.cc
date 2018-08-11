@@ -5,8 +5,6 @@
 namespace dprobe {
 namespace log {
 
-Logger Logger::instance_{};
-
 std::ostream& operator<<(std::ostream& out, Level lev) {
     switch(lev) {
     case Level::fatal  : out << "F"; break;

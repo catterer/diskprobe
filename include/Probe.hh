@@ -12,18 +12,13 @@ namespace probe {
 
 using Options = boost::property_tree::ptree;
 
-class AbstractProbe;;
+class AbstractProbe;
+
 auto factory(const std::string& probename, const Options&, Queue&) -> std::unique_ptr<AbstractProbe>;
 
 class AbstractProbe {
 public:
-    AbstractProbe(const std::string& name, const Options& pt, Queue& q):
-        name_{name},
-        options_{pt},
-        queue_{q},
-        period_{options_.get("heartbeat_period_ms", 1000U)}
-    { }
-
+    AbstractProbe(const std::string& name, const Options&, Queue&);
     virtual ~AbstractProbe() { if (thread_.joinable()) thread_.join(); }
 
     void start();

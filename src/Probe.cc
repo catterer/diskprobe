@@ -31,6 +31,13 @@ auto factory(const std::string& probename, const Options& pt, Queue& queue)
     return std::make_unique<FaultyHeartbeat>(probename, pt, queue);
 }
 
+AbstractProbe::AbstractProbe(const std::string& name, const Options& pt, Queue& q):
+    name_{name},
+    options_{pt},
+    queue_{q},
+    period_{options_.get("period_ms", 1000U)}
+{ }
+
 void AbstractProbe::start() {
     thread_ = std::thread(
         [this] () {
