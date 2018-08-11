@@ -3,6 +3,7 @@
 #include <include/Queue.hh>
 #include <include/Log.hh>
 #include <chrono>
+#include <map>
 #include <stdexcept>
 #include <stdint.h>
 
