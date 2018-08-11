@@ -1,5 +1,6 @@
 #include <include/Dispatcher.hh>
 
+#include <stdio.h>
 #include <iostream>
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/program_options.hpp>
@@ -13,6 +14,8 @@ int main(int argc, char** argv) try {
     po::options_description desc("Allowed options");
     uint32_t log_level = UINT32_MAX;
     uint32_t max_sampling_rate_ms;
+    const std::string stdout_keyword("<stdout>");
+    std::string log_file;
 
     desc.add_options()
 
@@ -22,6 +25,10 @@ int main(int argc, char** argv) try {
         ("config,c",
             po::value(&config_file),
             "path to config file")
+
+        ("out-file,o",
+            po::value(&log_file)->default_value(stdout_keyword),
+            "path to log file")
 
         ("log-level,l",
             po::value(&log_level),
@@ -39,6 +46,15 @@ int main(int argc, char** argv) try {
     if (vm.count("help")) {
         std::cout << desc << "\n";
         exit(EXIT_SUCCESS);
+    }
+
+    if (log_file != stdout_keyword) {
+        if (freopen(log_file.c_str(), "w+", stdout) == NULL)
+            throw std::runtime_error("Failed to open logfile");
+        fprintf(stdout, "1\n");
+        std::cout << "1.5\n";
+        printf("2\n");
+        std::cout << "3\n";
     }
 
     if (config_file.empty())
