@@ -23,6 +23,7 @@ Record::~Record() {
     auto tm = *std::localtime(&t);
     std::cout << "[" << getpid() << " " << std::put_time(&tm, "%e.%m.%Y %H:%M:%S") << "] " << level_
         << " " << str() << "\n";
+    std::cout.flush();
 }
 
 }
