@@ -9,6 +9,7 @@ include_directories("${CMAKE_SOURCE_DIR}")
 
 list(APPEND sources
     src/main.cc
+    src/Log.cc
     src/Probe.cc)
 
 add_executable(dprobe ${sources})

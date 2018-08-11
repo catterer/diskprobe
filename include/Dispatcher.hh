@@ -29,6 +29,8 @@ private:
 Dispatcher::Dispatcher(int argc, char** argv) {
     std::string config_file;
     po::options_description desc("Allowed options");
+    uint32_t log_level = UINT32_MAX;
+
     desc.add_options()
 
         ("help",
@@ -38,6 +40,10 @@ Dispatcher::Dispatcher(int argc, char** argv) {
             po::value(&config_file),
             "path to config file")
 
+        ("log-level,l",
+            po::value(&log_level),
+            "0-4, 0: only fatal, 4: everything")
+
         ("max-sampling-rate,s", 
             po::value(&max_sampling_rate_ms_)->default_value(100),
             "how often does main thread takes looks at the clock, msec");
@@ -46,8 +52,16 @@ Dispatcher::Dispatcher(int argc, char** argv) {
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
 
+    if (vm.count("help")) {
+        std::cout << desc << "\n";
+        exit(EXIT_SUCCESS);
+    }
+
     if (config_file.empty())
         throw std::invalid_argument("config file not specified");
+
+    if (log_level != UINT32_MAX)
+        log::Logger::get().filter((log::Level) log_level);
 
     boost::property_tree::ptree tree;
     boost::property_tree::ini_parser::read_ini(config_file, tree);

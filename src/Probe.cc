@@ -52,7 +52,7 @@ void HeartbeatingProbe::processMessage(std::shared_ptr<message::AbstractMessage>
             NLog(debug) << "Heartbeat received";
             last_heartbeat_ = time_now();
             if (down_) {
-                NLog(warning) << "UP";
+                NLog(warn) << "UP";
                 down_ = false;
             }
             return;
