@@ -2,7 +2,7 @@
 #include <include/Probe.hh>
 #include <include/Queue.hh>
 #include <chrono>
-#include <iostream>
+#include <stdexcept>
 #include <stdint.h>
 
 #include <boost/property_tree/ini_parser.hpp>
@@ -51,8 +51,11 @@ Dispatcher::Dispatcher(int argc, char** argv) {
     boost::property_tree::ptree tree;
     boost::property_tree::ini_parser::read_ini(config_file, tree);
 
-    for (const auto& p: tree)
+    for (const auto& p: tree) {
+        if (probes_.count(p.first))
+            throw std::runtime_error("probe names duplication");
         probes_.emplace(p.first, probe::factory(p.first, p.second, queue_));
+    }
 }
 
 void Dispatcher::loop() {
@@ -63,7 +66,7 @@ void Dispatcher::loop() {
         auto m = queue_.pop_for(milliseconds(max_sampling_rate_ms_));
         process(std::move(m));
 
-        auto now = std::chrono::high_resolution_clock::now();
+        auto now = time_now();
         for (auto& pb: probes_)
             pb.second->check(now);
     }
@@ -74,14 +77,6 @@ void Dispatcher::process(std::shared_ptr<message::AbstractMessage> some_msg) {
         return;
 
     {
-        auto hb = std::dynamic_pointer_cast<message::Heartbeat>(some_msg);
-        if (hb) {
-            std::cout << hb->sender() << ": Heartbeat\n";
-            return;
-        }
-    }
-
-    {
         auto ab = std::dynamic_pointer_cast<message::Abort>(some_msg);
         if (ab) {
             std::cout << ab->sender() << ": Abort!\n";
@@ -89,6 +84,10 @@ void Dispatcher::process(std::shared_ptr<message::AbstractMessage> some_msg) {
             return;
         }
     }
+
+    auto pi = probes_.find(some_msg->sender());
+    if (pi != probes_.end())
+        pi->second->processMessage(some_msg);
 }
 
 }

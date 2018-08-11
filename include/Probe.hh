@@ -10,71 +10,64 @@
 namespace dprobe {
 namespace probe {
 
-using boost::property_tree::ptree;
+using Options = boost::property_tree::ptree;
 
 class AbstractProbe;;
-auto factory(const std::string& probename, const ptree&, Queue&) -> std::unique_ptr<AbstractProbe>;
+auto factory(const std::string& probename, const Options&, Queue&) -> std::unique_ptr<AbstractProbe>;
 
 class AbstractProbe {
 public:
-    AbstractProbe(const std::string& name, const ptree& pt, Queue& q):
-        name_{name}, ptree_{pt}, queue_{q} {}
+    AbstractProbe(const std::string& name, const Options& pt, Queue& q):
+        name_{name},
+        options_{pt},
+        queue_{q},
+        period_{options_.get("heartbeat_period_ms", 1000U)}
+    { }
+
     virtual ~AbstractProbe() { if (thread_.joinable()) thread_.join(); }
 
+    void start();
+
     auto name() const -> const std::string& { return name_; }
-    void start() {
-        thread_ = std::thread(
-            [this] () {
-                Channel chan(name_, queue_);
-                try {
-                    loop(chan, ptree_);
-                } catch (const std::exception& x) {
-                    chan.send<message::Abort>(x.what());
-                }
-            });
-    }
+    auto period() const -> milliseconds { return period_; }
+    auto options() const -> const Options& { return options_; }
 
     virtual void check(time_point now) = 0;
-    virtual void loop(Channel&, const ptree&) = 0;
+    virtual void processMessage(std::shared_ptr<message::AbstractMessage>) = 0;
 
 private:
-    const std::string name_;
-    const ptree ptree_;
-    Queue&      queue_;
-    std::thread thread_;
+    virtual void iteration(Channel&) = 0;
+    void loop(Channel&);
+
+    const std::string   name_;
+    const Options       options_;
+    Queue&              queue_;
+    const milliseconds  period_;
+    std::thread         thread_;
 };
 
 class HeartbeatingProbe: public AbstractProbe {
 public:
-    HeartbeatingProbe(const std::string& name, const ptree& pt, Queue& q):
-        AbstractProbe(name, pt, q),
-        period_{pt.get("heartbeat_period_ms", 1000U)}
-    { }
+    using AbstractProbe::AbstractProbe;
 
-    void check(time_point now) override {
-        if (now < last_heartbeat_)
-            return;
-        if (now - last_heartbeat_ > period_ * 1.5) {
-            if (!down_) {
-                std::cout << name() << ": DOWN" << "\n";
-                down_ = true;
-            }
-        }
-    }
+    void check(time_point now) override;
+    void processMessage(std::shared_ptr<message::AbstractMessage>) override;
 
-    auto heartbeat_period() const -> milliseconds { return period_; }
+protected:
+    void iteration(Channel&) override;
 
 private:
+
     bool            down_{true};
     time_point      last_heartbeat_;
-    milliseconds    period_;
 };
 
-class FileWriter: public HeartbeatingProbe {
+class FaultyHeartbeat: public HeartbeatingProbe {
 public:
     using HeartbeatingProbe::HeartbeatingProbe;
 
-    void loop(Channel&, const ptree&);
+private:
+    void iteration(Channel&) override;
 };
 }
 
