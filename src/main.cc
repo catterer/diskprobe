@@ -51,10 +51,6 @@ int main(int argc, char** argv) try {
     if (log_file != stdout_keyword) {
         if (freopen(log_file.c_str(), "w+", stdout) == NULL)
             throw std::runtime_error("Failed to open logfile");
-        fprintf(stdout, "1\n");
-        std::cout << "1.5\n";
-        printf("2\n");
-        std::cout << "3\n";
     }
 
     if (config_file.empty())
