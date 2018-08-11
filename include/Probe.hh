@@ -53,6 +53,9 @@ public:
     void check(time_point now) override;
     void processMessage(std::shared_ptr<message::AbstractMessage>) override;
 
+    virtual void onUp();
+    virtual void onDown();
+
 protected:
     void iteration(Channel&) override;
 
@@ -69,6 +72,6 @@ public:
 private:
     void iteration(Channel&) override;
 };
-}
 
+}
 }

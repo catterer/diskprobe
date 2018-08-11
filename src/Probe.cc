@@ -39,8 +39,8 @@ void HeartbeatingProbe::check(time_point now) {
         return;
     if (now - last_heartbeat_ > period() * 1.5) {
         if (!down_) {
-            NLog(error) << "DOWN";
             down_ = true;
+            onDown();
         }
     }
 }
@@ -52,12 +52,20 @@ void HeartbeatingProbe::processMessage(std::shared_ptr<message::AbstractMessage>
             NLog(debug) << "Heartbeat received";
             last_heartbeat_ = time_now();
             if (down_) {
-                NLog(warn) << "UP";
                 down_ = false;
+                onUp();
             }
             return;
         }
     }
+}
+
+void HeartbeatingProbe::onUp() {
+    NLog(warn) << "UP";
+}
+
+void HeartbeatingProbe::onDown() {
+    NLog(error) << "DOWN";
 }
 
 void FaultyHeartbeat::iteration(Channel& chan) {
