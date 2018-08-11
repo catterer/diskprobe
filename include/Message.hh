@@ -7,31 +7,35 @@ namespace message {
 
 class AbstractMessage {
 public:
-    enum class Type {
-        Heartbeat,
-        Abort
-    };
-
-    AbstractMessage(Type type):
-        type_{type}
-    {}
+    AbstractMessage() = default;
     virtual ~AbstractMessage() = default;
 
     auto sender() const -> const std::string& { return sender_; }
     void sender(std::string sender) { sender_ = sender; }
-    auto type() const -> Type { return type_; }
 
 protected:
     std::string sender_;
-    Type        type_;
+};
+
+class Error: public AbstractMessage {
+public:
+    Error(const std::string& description):
+        description_{description}
+    {}
+
+    auto description() const -> const std::string& { return description_; }
+
+private:
+    std::string description_;
 };
 
 class Abort: public AbstractMessage {
 public:
     Abort(const std::string& what):
-        AbstractMessage(Type::Abort),
         what_{what}
     {}
+
+    auto what() const -> const std::string& { return what_; }
 
 private:
     std::string what_;
@@ -39,9 +43,7 @@ private:
 
 class Heartbeat: public AbstractMessage {
 public:
-    Heartbeat():
-        AbstractMessage(Type::Heartbeat)
-    {}
+    Heartbeat() = default;
 };
 
 };

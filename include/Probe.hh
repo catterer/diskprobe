@@ -1,7 +1,8 @@
 #pragma once
 #include <include/Channel.hh>
-
+#include <include/Utils.hh>
 #include <include/chrono_aliases.hh>
+
 #include <thread>
 #include <iostream>
 #include <functional>
@@ -14,7 +15,16 @@ using Options = boost::property_tree::ptree;
 
 class AbstractProbe;
 
-auto factory(const std::string& probename, const Options&, Queue&) -> std::unique_ptr<AbstractProbe>;
+class ProbeFactory: public Singleton<ProbeFactory> {
+public:
+    ProbeFactory();
+
+    auto build(const std::string& probename, const Options&, Queue&) -> std::unique_ptr<AbstractProbe>;
+
+private:
+    using ProbeCreator = std::function<std::unique_ptr<AbstractProbe>(const std::string&, const Options&, Queue&)>;
+    std::map<std::string, ProbeCreator> typemap_;
+};
 
 class AbstractProbe {
 public:
@@ -52,14 +62,15 @@ public:
     void processMessage(std::shared_ptr<message::AbstractMessage>) override;
 
     virtual void onUp();
-    virtual void onDown();
+    virtual void onDown(const std::string& err);
 
 protected:
     void iteration(Channel&) override;
 
 private:
+    void fail(const std::string& description);
 
-    bool            down_{true};
+    bool            is_down_{true};
     time_point      last_heartbeat_;
 };
 
@@ -69,6 +80,16 @@ public:
 
 private:
     void iteration(Channel&) override;
+};
+
+class FileWriter: public HeartbeatingProbe {
+public:
+    FileWriter(const std::string& name, const Options&, Queue&);
+
+private:
+    void iteration(Channel&) override;
+
+    const std::string filename_;
 };
 
 }
