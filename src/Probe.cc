@@ -12,7 +12,7 @@ auto factory(const std::string& probename, const ptree& pt, Queue& queue)
 
 void FileWriter::loop(Channel& chan, const ptree& options) {
     for (;;) {
-        ::sleep(1);
+        std::this_thread::sleep_for(heartbeat_period());
         chan.send<message::Heartbeat>();
     }
 }

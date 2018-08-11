@@ -3,6 +3,7 @@
 
 #include <include/chrono_aliases.hh>
 #include <thread>
+#include <iostream>
 #include <functional>
 #include <boost/property_tree/ptree.hpp>
 
@@ -43,15 +44,37 @@ private:
     std::thread thread_;
 };
 
-class FileWriter: public AbstractProbe {
+class HeartbeatingProbe: public AbstractProbe {
 public:
-    using AbstractProbe::AbstractProbe;
+    HeartbeatingProbe(const std::string& name, const ptree& pt, Queue& q):
+        AbstractProbe(name, pt, q),
+        period_{pt.get("heartbeat_period_ms", 1000U)}
+    { }
 
-    void check(time_point now) { /* TODO */; }
-    void loop(Channel&, const ptree&);
+    void check(time_point now) override {
+        if (now < last_heartbeat_)
+            return;
+        if (now - last_heartbeat_ > period_ * 1.5) {
+            if (!down_) {
+                std::cout << name() << ": DOWN" << "\n";
+                down_ = true;
+            }
+        }
+    }
+
+    auto heartbeat_period() const -> milliseconds { return period_; }
 
 private:
-    time_point  last_heartbeat_;
+    bool            down_{true};
+    time_point      last_heartbeat_;
+    milliseconds    period_;
+};
+
+class FileWriter: public HeartbeatingProbe {
+public:
+    using HeartbeatingProbe::HeartbeatingProbe;
+
+    void loop(Channel&, const ptree&);
 };
 }
 
