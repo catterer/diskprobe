@@ -70,8 +70,8 @@ protected:
 private:
     void fail(const std::string& description);
 
-    bool            is_down_{true};
-    time_point      last_heartbeat_;
+    bool            is_down_{false};
+    time_point      last_heartbeat_{time_now()};
 };
 
 class FaultyHeartbeat: public HeartbeatingProbe {
