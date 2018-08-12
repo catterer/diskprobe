@@ -12,7 +12,7 @@ int main(int argc, char** argv) try {
 
     std::string config_file;
     po::options_description desc("Allowed options");
-    uint32_t log_level = UINT32_MAX;
+    uint32_t log_level;
     uint32_t max_sampling_rate_ms;
     const std::string stdout_keyword("<stdout>");
     std::string log_file;
@@ -31,7 +31,7 @@ int main(int argc, char** argv) try {
             "path to log file")
 
         ("log-level,l",
-            po::value(&log_level),
+            po::value(&log_level)->default_value(2),
             "0-4, 0: only fatal, 4: everything")
 
         ("max-sampling-rate,s", 
@@ -56,8 +56,7 @@ int main(int argc, char** argv) try {
     if (config_file.empty())
         throw std::invalid_argument("config file not specified");
 
-    if (log_level != UINT32_MAX)
-        log::Logger::get().filter((log::Level) log_level);
+    log::Logger::get().filter((log::Level) log_level);
 
     probe::Options root;
     boost::property_tree::ini_parser::read_ini(config_file, root);
