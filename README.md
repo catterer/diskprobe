@@ -28,6 +28,9 @@ Dependencies: boost
                                           at the clock, msec    
 ## Launch example
 Usual
+
     dprobe -c cfg_file.ini
+    
 Daemonized
+
     nohup dprobe -c cfg_file.init -o /var/log/dprobe.log &
