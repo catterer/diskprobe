@@ -70,9 +70,11 @@ protected:
 
 private:
     void fail(const std::string& description);
+    void callScriptIfNeeded(std::string param_name);
 
-    bool            is_down_{false};
-    time_point      last_heartbeat_{time_now()};
+    bool                                is_down_{false};
+    time_point                          last_heartbeat_{time_now()};
+    std::map<std::string, time_point>   last_script_call{};
 };
 
 class FaultyHeartbeat: public HeartbeatingProbe {

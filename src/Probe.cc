@@ -136,20 +136,38 @@ void HeartbeatingProbe::fail(const std::string& err) {
     }
 }
 
+void HeartbeatingProbe::callScriptIfNeeded(std::string param_name) {
+    auto script = options().get(param_name, std::string());
+
+    if (script.empty())
+        return;
+
+    auto param_between = std::string("minimal_period_ms_between__") + param_name;
+    auto period_between = options().get(param_between, 0U);
+
+    const auto now = time_now();
+
+    if (period_between
+            and last_script_call.count(param_name)
+            and (now - last_script_call[param_name] < milliseconds(period_between)))
+    {
+        NLog(warn) << "Calling suppressed by " << param_between << ": '" << script <<"'";
+        return;
+    }
+
+    last_script_call[param_name] = now;
+
+    forkexec(script);
+}
+
 void HeartbeatingProbe::onUp() {
     NLog(warn) << "UP";
-
-    auto script = options().get("on_repair", std::string());
-    if (!script.empty())
-        forkexec(script);
+    callScriptIfNeeded("on_repair");
 }
 
 void HeartbeatingProbe::onDown(const std::string& err) {
     NLog(error) << "DOWN: " << err;
-
-    auto script = options().get("on_failure", std::string());
-    if (!script.empty())
-        forkexec(script);
+    callScriptIfNeeded("on_failure");
 }
 
 void FaultyHeartbeat::iteration(Channel& chan) {
