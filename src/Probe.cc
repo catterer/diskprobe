@@ -18,6 +18,16 @@ ProbeFactory::ProbeFactory() {
     MAP("write_smth_to_file",               FileWriter);
 }
 
+template<typename CONT, typename CB>
+static auto flatten(const CONT& cont, CB cb)
+    -> std::string
+{
+    std::stringstream out;
+    for (auto i = cont.cbegin(); i != cont.cend(); i++)
+        cb(*i, out);
+    return out.str();
+}
+
 auto ProbeFactory::build(const std::string& probename, const Options& opts, Queue& que)
     -> std::unique_ptr<AbstractProbe>
 {
@@ -28,16 +38,14 @@ auto ProbeFactory::build(const std::string& probename, const Options& opts, Queu
             matches.emplace_back(p.first);
     
     if (matches.empty()) {
-        NLog(error, probename) << "unknown probe type; available: " <<
-            std::accumulate(typemap_.begin(), typemap_.end(), std::stringstream(),
-                    [] (auto&& out, const auto& p) { out << p.first << ","; return std::move(out); }).str();
+        NLog(error, probename) << "unknown probe type; available: "
+            << flatten(typemap_, [] (const auto& p, auto& out) { out << p.first << ","; });
         throw std::invalid_argument(probename);
     }
 
     if (matches.size() > 1) {
-        NLog(error, probename) << "conflicting keywords: " <<
-            std::accumulate(matches.begin(), matches.end(), std::stringstream(),
-                    [] (auto&& out, const auto& match) { out << match << ","; return std::move(out); }).str();
+        NLog(error, probename) << "conflicting keywords: "
+            << flatten(matches, [] (const auto& m, auto& out) { out << m << ","; });
         throw std::invalid_argument(probename);
     }
 
@@ -145,7 +153,7 @@ void HeartbeatingProbe::onDown(const std::string& err) {
 }
 
 void FaultyHeartbeat::iteration(Channel& chan) {
-    if (rand() % 100 < options().get("fail_randomly_with_probability", 20U))
+    if ((unsigned)(rand() % 100) < options().get("fail_randomly_with_probability", 20U))
         return;
     HeartbeatingProbe::iteration(chan);
 }

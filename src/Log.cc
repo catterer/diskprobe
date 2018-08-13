@@ -1,5 +1,7 @@
 #include <include/Log.hh>
 
+#include <ctime>
+#include <cassert>
 #include <unistd.h>
 
 namespace dprobe {
@@ -21,8 +23,11 @@ Record::~Record() {
     auto tm = *std::localtime(&t);
     {
         std::lock_guard<std::mutex> lg(Logger::get().mutex());
-        std::cout << "[" << getpid() << " " << std::put_time(&tm, "%e.%m.%Y %H:%M:%S") << "] " << level_
-            << " " << str() << "\n";
+
+        char buf[256];
+        auto rc = strftime(buf, sizeof buf, "%e.%m.%Y %H:%M:%S", &tm);
+        assert(rc); (void)rc;
+        std::cout << "[" << getpid() << " " << buf << "] " << level_ << " " << str() << "\n";
         std::cout.flush();
     }
 }
