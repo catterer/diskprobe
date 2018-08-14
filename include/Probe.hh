@@ -36,6 +36,7 @@ public:
 
     auto name() const -> const std::string& { return name_; }
     auto period() const -> milliseconds { return period_; }
+    auto timeout() const -> milliseconds { return period_ * 2; }
     auto options() const -> const Options& { return options_; }
 
     virtual void check(time_point now) = 0;
@@ -65,6 +66,8 @@ public:
     virtual void onUp();
     virtual void onDown(const std::string& err);
 
+    virtual int runTask(Channel&) = 0;
+
 protected:
     void iteration(Channel&) override;
 
@@ -90,7 +93,7 @@ public:
     FileWriter(const std::string& name, const Options&, Queue&);
 
 private:
-    void iteration(Channel&) override;
+    int runTask(Channel&) override;
 
     const std::string filename_;
 };
@@ -100,7 +103,7 @@ public:
     FileReader(const std::string& name, const Options&, Queue&);
 
 private:
-    void iteration(Channel&) override;
+    int runTask(Channel&) override;
 
     const std::string filename_;
 };

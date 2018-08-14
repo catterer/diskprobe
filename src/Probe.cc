@@ -103,13 +103,25 @@ void AbstractProbe::loop(Channel& chan) {
 }
 
 void HeartbeatingProbe::iteration(Channel& chan) {
+    auto started = time_now();
+    int rc = runTask(chan);
+    auto diff = time_now() - started;
+
+    if (rc)
+        return;
+
+    if (diff > timeout()) {
+        NLog(error) << "took too long: " << milliseconds(diff) << " msec";
+        return;
+    }
+
     chan.send<message::Heartbeat>();
 }
 
 void HeartbeatingProbe::check(time_point now) {
     if (now < last_heartbeat_)
         return;
-    if (now - last_heartbeat_ > period() * 1.5)
+    if (now - last_heartbeat_ > timeout())
         return fail("timeout");
 }
 
@@ -182,18 +194,16 @@ FileWriter::FileWriter(const std::string& name, const Options& opts, Queue& que)
     filename_(options().get<std::string>("write_smth_to_file"))
 { }
 
-void FileWriter::iteration(Channel& chan) {
-    {
-        auto f = std::shared_ptr<FILE>(fopen(filename_.c_str(), "w"), [] (FILE* f) { if (f) fclose(f); });
-        if (!f.get())
-            return chan.send<message::Error>(strerror(errno));
-        char byte{};
-        auto rc = fwrite(&byte, 1, 1, f.get());
-        if (rc != 1 or fflush(f.get()) < 0)
-            return chan.send<message::Error>(strerror(errno));
-    }
+int FileWriter::runTask(Channel& chan) {
+    auto f = std::shared_ptr<FILE>(fopen(filename_.c_str(), "w"), [] (FILE* f) { if (f) fclose(f); });
+    if (!f.get())
+        return chan.send<message::Error>(strerror(errno)), -1;
+    char byte{};
+    auto rc = fwrite(&byte, 1, 1, f.get());
+    if (rc != 1 or fflush(f.get()) < 0)
+        return chan.send<message::Error>(strerror(errno)), -1;
 
-    HeartbeatingProbe::iteration(chan);
+    return 0;
 }
 
 FileReader::FileReader(const std::string& name, const Options& opts, Queue& que):
@@ -201,19 +211,17 @@ FileReader::FileReader(const std::string& name, const Options& opts, Queue& que)
     filename_(options().get<std::string>("read_smth_from_file"))
 { }
 
-void FileReader::iteration(Channel& chan) {
-    {
-        auto f = std::shared_ptr<FILE>(fopen(filename_.c_str(), "r"), [] (FILE* f) { if (f) fclose(f); });
-        if (!f.get())
-            return chan.send<message::Error>(strerror(errno));
+int FileReader::runTask(Channel& chan) {
+    auto f = std::shared_ptr<FILE>(fopen(filename_.c_str(), "r"), [] (FILE* f) { if (f) fclose(f); });
+    if (!f.get())
+        return chan.send<message::Error>(strerror(errno)), -1;
 
-        char byte{};
-        auto rc = fread(&byte, 1, 1, f.get());
-        if (rc != 1)
-            return chan.send<message::Error>(strerror(errno));
-    }
+    char byte{};
+    auto rc = fread(&byte, 1, 1, f.get());
+    if (rc != 1)
+        return chan.send<message::Error>(strerror(errno)), -1;
 
-    HeartbeatingProbe::iteration(chan);
+    return 0;
 }
 
 
