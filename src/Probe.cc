@@ -110,8 +110,9 @@ void HeartbeatingProbe::iteration(Channel& chan) {
     if (rc)
         return;
 
-    if (diff > timeout()) {
-        NLog(error) << "took too long: " << milliseconds(diff) << " msec";
+    if (diff >= timeout()) {
+        NLog(error) << "took too much time to run task: "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(diff).count() << " msec";
         return;
     }
 
@@ -121,8 +122,8 @@ void HeartbeatingProbe::iteration(Channel& chan) {
 void HeartbeatingProbe::check(time_point now) {
     if (now < last_heartbeat_)
         return;
-    if (now - last_heartbeat_ > timeout())
-        return fail("timeout");
+    if (now - last_heartbeat_ >= timeout())
+        return fail("no heartbeat within period");
 }
 
 void HeartbeatingProbe::processMessage(std::shared_ptr<message::AbstractMessage> some_msg) {
@@ -183,10 +184,10 @@ void HeartbeatingProbe::onDown(const std::string& err) {
     callScriptIfNeeded("on_failure");
 }
 
-void FaultyHeartbeat::iteration(Channel& chan) {
+int FaultyHeartbeat::runTask(Channel& chan) {
     if ((unsigned)(rand() % 100) < options().get("fail_randomly_with_probability", 20U))
-        return;
-    HeartbeatingProbe::iteration(chan);
+        std::this_thread::sleep_for(timeout());
+    return 0;
 }
 
 FileWriter::FileWriter(const std::string& name, const Options& opts, Queue& que):

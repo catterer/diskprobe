@@ -85,7 +85,7 @@ public:
     using HeartbeatingProbe::HeartbeatingProbe;
 
 private:
-    void iteration(Channel&) override;
+    int runTask(Channel&) override;
 };
 
 class FileWriter: public HeartbeatingProbe {
