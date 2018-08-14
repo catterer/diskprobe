@@ -16,6 +16,7 @@ ProbeFactory::ProbeFactory() {
     typemap_[keyword] = [] (const auto& name, const Options& opts, Queue& queue) { return std::make_unique<type>(name, opts, queue); };
     MAP("fail_randomly_with_probability",   FaultyHeartbeat);
     MAP("write_smth_to_file",               FileWriter);
+    MAP("read_smth_from_file",              FileReader);
 }
 
 template<typename CONT, typename CB>
@@ -189,6 +190,26 @@ void FileWriter::iteration(Channel& chan) {
         char byte{};
         auto rc = fwrite(&byte, 1, 1, f.get());
         if (rc != 1 or fflush(f.get()) < 0)
+            return chan.send<message::Error>(strerror(errno));
+    }
+
+    HeartbeatingProbe::iteration(chan);
+}
+
+FileReader::FileReader(const std::string& name, const Options& opts, Queue& que):
+    HeartbeatingProbe(name, opts, que),
+    filename_(options().get<std::string>("read_smth_from_file"))
+{ }
+
+void FileReader::iteration(Channel& chan) {
+    {
+        auto f = std::shared_ptr<FILE>(fopen(filename_.c_str(), "r"), [] (FILE* f) { if (f) fclose(f); });
+        if (!f.get())
+            return chan.send<message::Error>(strerror(errno));
+
+        char byte{};
+        auto rc = fread(&byte, 1, 1, f.get());
+        if (rc != 1)
             return chan.send<message::Error>(strerror(errno));
     }
 

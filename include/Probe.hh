@@ -95,5 +95,15 @@ private:
     const std::string filename_;
 };
 
+class FileReader: public HeartbeatingProbe {
+public:
+    FileReader(const std::string& name, const Options&, Queue&);
+
+private:
+    void iteration(Channel&) override;
+
+    const std::string filename_;
+};
+
 }
 }
