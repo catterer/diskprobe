@@ -110,7 +110,7 @@ void HeartbeatingProbe::iteration(Channel& chan) {
     if (rc)
         return;
 
-    if (diff >= timeout()) {
+    if (diff >= timeout() - period()) {
         NLog(error) << "took too much time to run task: "
             << std::chrono::duration_cast<std::chrono::milliseconds>(diff).count() << " msec";
         return;
