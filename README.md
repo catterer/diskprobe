@@ -11,13 +11,29 @@ Dependencies: boost
 
     [ faulty_test ]
     fail_randomly_with_probability = 10
+
+    # launch every 500 msec; optional; default is 1000
     period_ms = 500
-    on_failure = /usr/bin/osascript -e "display notification \"faulty_test failed\"" # MacOS notifications
+
+    # do this when task starts to fail/timeout
+    on_failure = /usr/bin/osascript -e "display notification \"faulty_test failed\""
+
+    # do this when the task stops to fail/timeout
     on_repair = /usr/bin/osascript -e "display notification \"faulty_test repaired\""
+
+    # task timeouts after 500 ms
+    task_time_limit_ms = 500
     
+
     [ file_writer ]
     write_smth_to_file = /tmp/t
     on_failure = notify-send "FS problems!"
+    task_time_limit_ms = 500
+    
+    [ file_reader ]
+    read_smth_from_file = /tmp/t
+    on_failure = notify-send "FS problems!"
+    task_time_limit_ms = 500
     
 ## Allowed options:
     --help                                produce help message
