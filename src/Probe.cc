@@ -102,6 +102,14 @@ void AbstractProbe::loop(Channel& chan) {
     }
 }
 
+HeartbeatingProbe::HeartbeatingProbe(const std::string& name, const Options& opts, Queue& qu):
+    AbstractProbe(name, opts, qu),
+    task_time_limit_ms_{options().get("task_time_limit_ms", 0U)}
+{
+    if (task_time_limit_ms_ == milliseconds(0))
+        throw std::invalid_argument("invalid task_time_limit_ms");
+}
+
 void HeartbeatingProbe::iteration(Channel& chan) {
     auto started = time_now();
     int rc = runTask(chan);
@@ -110,7 +118,7 @@ void HeartbeatingProbe::iteration(Channel& chan) {
     if (rc)
         return;
 
-    if (diff >= timeout() - period()) {
+    if (diff >= task_time_limit_ms_) {
         NLog(error) << "took too much time to run task: "
             << std::chrono::duration_cast<std::chrono::milliseconds>(diff).count() << " msec";
         return;
@@ -122,7 +130,7 @@ void HeartbeatingProbe::iteration(Channel& chan) {
 void HeartbeatingProbe::check(time_point now) {
     if (now < last_heartbeat_)
         return;
-    if (now - last_heartbeat_ >= timeout())
+    if (now - last_heartbeat_ >= period() + task_time_limit_ms_)
         return fail("no heartbeat within period");
 }
 
@@ -186,7 +194,7 @@ void HeartbeatingProbe::onDown(const std::string& err) {
 
 int FaultyHeartbeat::runTask(Channel& chan) {
     if ((unsigned)(rand() % 100) < options().get("fail_randomly_with_probability", 20U))
-        std::this_thread::sleep_for(timeout());
+        std::this_thread::sleep_for(task_time_limit_ms() + milliseconds(1));
     return 0;
 }
 

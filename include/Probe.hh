@@ -36,7 +36,6 @@ public:
 
     auto name() const -> const std::string& { return name_; }
     auto period() const -> milliseconds { return period_; }
-    auto timeout() const -> milliseconds { return period_ * 2; }
     auto options() const -> const Options& { return options_; }
 
     virtual void check(time_point now) = 0;
@@ -58,7 +57,7 @@ private:
 
 class HeartbeatingProbe: public AbstractProbe {
 public:
-    using AbstractProbe::AbstractProbe;
+    HeartbeatingProbe(const std::string& name, const Options&, Queue&);
 
     void check(time_point now) override;
     void processMessage(std::shared_ptr<message::AbstractMessage>) override;
@@ -70,11 +69,13 @@ public:
 
 protected:
     void iteration(Channel&) override;
+    auto task_time_limit_ms() const -> milliseconds { return task_time_limit_ms_; }
 
 private:
     void fail(const std::string& description);
     void callScriptIfNeeded(std::string param_name);
 
+    const milliseconds                  task_time_limit_ms_{};
     bool                                is_down_{false};
     time_point                          last_heartbeat_{time_now()};
     std::map<std::string, time_point>   last_script_call{};
